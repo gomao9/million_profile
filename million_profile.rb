@@ -3,6 +3,7 @@ require 'open-uri'
 require 'nokogiri'
 require 'json'
 require 'parallel'
+require 'pp'
 require 'ruby-progressbar'
 
 urls = %w(
@@ -58,7 +59,7 @@ http://www.millionlive.com/index.php?%E5%AE%AE%E5%B0%BE%E7%BE%8E%E4%B9%9F
 http://www.millionlive.com/index.php?%E4%BC%B4%E7%94%B0%E8%B7%AF%E5%AD%90%28%E3%83%AD%E3%82%B3%29
 )
 
-THREADS = 5
+THREADS = 10
 hashes = Parallel.map(urls, in_threads: THREADS, progress: 'downloading') do |url|
 
   charset,html = open(url) do |f|
@@ -72,7 +73,7 @@ hashes = Parallel.map(urls, in_threads: THREADS, progress: 'downloading') do |ur
   end
 
   name = doc.css('#main_content > h2.sub').text.strip
-  type = doc.css('#main_content > div:nth-child(20) > table > tbody > tr > td:nth-child(2)').text
+  type = doc.css("#main_content th.style_th").find{|th| th.text == '属性'}.next.text
 
   hash = Hash[*%w(cv age birth height weight bwh cup bloodtype hobby special like color)
           .zip(val).flatten]
@@ -81,7 +82,7 @@ hashes = Parallel.map(urls, in_threads: THREADS, progress: 'downloading') do |ur
   hash
 end
 
-open('million_profile.json', 'w:utf-8') {|f| f.write hashes.to_json }
+open('million_profile.json', 'w:utf-8') {|f| f.write JSON.pretty_generate(hashes) }
 
 
 
